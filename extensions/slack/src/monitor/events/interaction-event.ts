@@ -158,18 +158,25 @@ type SessionEventOptions = Parameters<PluginRuntime["system"]["enqueueSessionEve
 export type SlackInteractionEventRoute = Pick<SessionEventOptions, "agentId" | "sessionKey"> &
   Required<Pick<SessionEventOptions, "expectedTarget">>;
 
+export type SlackInteractionRequester = Readonly<{
+  channel: string;
+  accountId: string;
+  senderId: string;
+}>;
+
 export async function captureSlackInteractionEventRoute(
   route: Pick<SessionEventOptions, "agentId" | "sessionKey">,
-  log?: (message: string) => void,
+  options: { requester: SlackInteractionRequester; log?: (message: string) => void },
 ): Promise<SlackInteractionEventRoute | undefined> {
   try {
     const expectedTarget = await getSlackRuntime().system.captureSessionEventTarget(
       route.agentId,
       route.sessionKey,
+      { requester: options.requester },
     );
     return { agentId: route.agentId, sessionKey: route.sessionKey, expectedTarget };
   } catch (error) {
-    log?.(`slack:interaction follow-up capture refused: ${String(error)}`);
+    options.log?.(`slack:interaction follow-up capture refused: ${String(error)}`);
     return undefined;
   }
 }

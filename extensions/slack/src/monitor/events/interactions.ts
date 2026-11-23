@@ -94,7 +94,10 @@ export function registerSlackInteractionEvents(params: {
       threadTs,
       eventScope,
     });
-    const route = await captureSlackInteractionEventRoute(destination, runtimeContext.runtime.log);
+    const route = await captureSlackInteractionEventRoute(destination, {
+      requester: { channel: "slack", accountId: runtimeContext.accountId, senderId: userId },
+      log: runtimeContext.runtime.log,
+    });
     if (!route || !runtimeContext.isRuntimePolicyCurrent()) {
       return;
     }

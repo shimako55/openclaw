@@ -130,7 +130,10 @@ export function registerModalLifecycleHandler(params: {
       };
 
       const sessionRouting = await resolveModalSessionRouting();
-      const route = await captureSlackInteractionEventRoute(sessionRouting, runtimeCtx.runtime.log);
+      const route = await captureSlackInteractionEventRoute(sessionRouting, {
+        requester: { channel: "slack", accountId: runtimeCtx.accountId, senderId: userId },
+        log: runtimeCtx.runtime.log,
+      });
       if (!runtimeCtx.isRuntimePolicyCurrent()) {
         return;
       }

@@ -83,6 +83,31 @@ describe("plugin session-event boundary", () => {
     });
   });
 
+  it("forwards a natively verified channel requester to host target capture", async () => {
+    const requester = { channel: "slack", accountId: "default", senderId: "U123" };
+    await inOwnerScope(() =>
+      system().captureSessionEventTarget(address.agentId, address.sessionKey, { requester }),
+    );
+    expect(host.capture).toHaveBeenCalledExactlyOnceWith(
+      address.agentId,
+      address.sessionKey,
+      expect.objectContaining({
+        requesterOwner: {
+          requester: { kind: "channel", requester: { version: 1, ...requester } },
+        },
+      }),
+    );
+  });
+
+  it("rejects a requester assertion outside an admitted plugin request", async () => {
+    await expect(
+      system().captureSessionEventTarget(address.agentId, address.sessionKey, {
+        requester: { channel: "slack", accountId: "default", senderId: "U123" },
+      }),
+    ).rejects.toThrow("requires an admitted plugin request");
+    expect(host.capture).not.toHaveBeenCalled();
+  });
+
   it("redeems handles across runtime copies and rejects copied handles", async () => {
     const expectedTarget = await captureTarget();
     vi.resetModules();

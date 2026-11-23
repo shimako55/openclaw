@@ -19,16 +19,43 @@ const loadCaptureSessionEventTarget = createLazyRuntimeNamedExport(
   "captureSessionEventTargetForHost",
 );
 
+/**
+ * A sender the channel plugin natively verified before starting this work.
+ * The host rechecks it under the same command-owner policy as message ingress.
+ */
+export type SessionEventVerifiedRequester = Readonly<{
+  channel: string;
+  accountId: string;
+  senderId: string;
+}>;
+
 /** Capture the original destination before asynchronous plugin work. */
 export async function captureSessionEventTarget(
   agentId: string,
   sessionKey: string,
+  options: { requester?: SessionEventVerifiedRequester } = {},
 ): Promise<SessionEventTarget> {
   const assertCurrent = getPluginRuntimeGatewayRequestScope()?.assertSystemOwnerCurrent;
   assertCurrent?.();
+  const requester = options.requester;
+  if (requester && !assertCurrent) {
+    throw new Error("Session event requester assertion requires an admitted plugin request");
+  }
   const captureSessionEventTargetForHost = await loadCaptureSessionEventTarget();
   assertCurrent?.();
-  const target = await captureSessionEventTargetForHost(agentId, sessionKey, { assertCurrent });
+  const target = await captureSessionEventTargetForHost(agentId, sessionKey, {
+    assertCurrent,
+    ...(requester
+      ? {
+          requesterOwner: {
+            requester: {
+              kind: "channel" as const,
+              requester: { version: 1 as const, ...requester },
+            },
+          },
+        }
+      : {}),
+  });
   assertCurrent?.();
   // SAFETY: This mint registers the fresh handle in the private WeakMap; redemption rejects copies and validates the host-captured target.
   const handle = Object.freeze({}) as SessionEventTarget;

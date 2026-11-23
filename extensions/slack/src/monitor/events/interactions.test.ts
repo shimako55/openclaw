@@ -135,9 +135,11 @@ function expectApproval(cfg: unknown, overrides: Record<string, unknown> = {}) {
     ...overrides,
   });
 }
-function expectSessionEvent(agentId: string, sessionKey: string) {
+function expectSessionEvent(agentId: string, sessionKey: string, senderId = "U123") {
   expect(eventOptions()).toMatchObject({ agentId, sessionKey, createIfMissing: true });
-  expect(captureSessionEventTargetMock).toHaveBeenCalledWith(agentId, sessionKey);
+  expect(captureSessionEventTargetMock).toHaveBeenCalledWith(agentId, sessionKey, {
+    requester: { channel: "slack", accountId: "default", senderId },
+  });
 }
 const pluginHandled = { matched: true, handled: true, duplicate: false };
 function actions(blockId: string, elements: Record<string, unknown>[]) {
@@ -1096,7 +1098,7 @@ describe("registerSlackInteractionEvents", () => {
       sessionKey: "agent:ops:slack:channel:C1",
       deliveryContext: { channel: "slack", to: "team:T1:user:U777", accountId: "default" },
     });
-    expectSessionEvent("ops", "agent:ops:slack:channel:C1");
+    expectSessionEvent("ops", "agent:ops:slack:channel:C1", "U777");
     const payload = slackInteractionPayload();
     expectRecordFields(payload, {
       interactionType: "view_submission",
@@ -1300,7 +1302,7 @@ describe("registerSlackInteractionEvents", () => {
     expect(trackEvent).toHaveBeenCalledTimes(1);
     expect(options.sessionKey).toBe("agent:main:slack:channel:C99");
     expect(options).toMatchObject({ deliveryContext: { channel: "slack", accountId: "default" } });
-    expectSessionEvent("main", "agent:main:slack:channel:C99");
+    expectSessionEvent("main", "agent:main:slack:channel:C99", "U900");
   });
 
   it("sends a workspace-qualified reviewer for plugin buttons on workspace installs", async () => {

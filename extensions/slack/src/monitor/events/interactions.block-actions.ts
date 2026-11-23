@@ -543,7 +543,16 @@ export function registerSlackBlockActionHandler(params: {
       threadTs: parsed.threadTs,
       eventScope,
     });
-    const route = await captureSlackInteractionEventRoute(destination, runtimeContext.runtime.log);
+    const route = await captureSlackInteractionEventRoute(destination, {
+      // Slack's request signature verifies this clicker; route their identity to the
+      // host so owner-only tools use the same owner check as a normal message.
+      requester: {
+        channel: "slack",
+        accountId: runtimeContext.accountId,
+        senderId: parsed.userId,
+      },
+      log: runtimeContext.runtime.log,
+    });
     if (!runtimeContext.isRuntimePolicyCurrent()) {
       return;
     }

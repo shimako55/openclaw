@@ -99,6 +99,14 @@ keep the existing synchronous fallback.
     ownership across admission and effects. A reset or revoked target cannot be
     replaced silently with a new conversation.
 
+    Channel plugins starting a turn from a natively verified interaction (for
+    example a signed button click) may pass a third argument,
+    `{ requester: { channel, accountId, senderId } }`. The host rechecks that
+    sender under the same command-owner policy as message ingress, so an owner's
+    interaction keeps owner-only tools while a guest's does not. The assertion
+    is available only inside an admitted plugin request; never pass an identity
+    the channel did not verify.
+
     Event options require `agentId` and `sessionKey`; optional fields are
     `contextKey`, `deliveryContext`, `abortSignal`, `expectedTarget`, and
     `createIfMissing: true`. Use `createIfMissing` only for authorized fresh
